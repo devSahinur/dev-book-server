@@ -26,6 +26,13 @@ client.connect(err => {
             res.send(result.insertedCount > 0)
         })
     })
+
+    app.get('/books', (req, res) => {
+        booksCollection.find({})
+        .toArray((err, document) => {
+            res.send(document)
+        })
+    })
 });
 
 
