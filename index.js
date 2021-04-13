@@ -27,6 +27,15 @@ client.connect(err => {
             res.send(result.insertedCount > 0)
         })
     })
+    app.post('/addOrder', (req, res) => {
+        const newBook = req.body;
+        console.log(newBook);
+        ordersCollection.insertOne(newBook)
+        .then(result => {
+            console.log(result.insertedCount);
+            res.send(result.insertedCount > 0)
+        })
+    })
 
     app.get('/books', (req, res) => {
         booksCollection.find({})
@@ -34,20 +43,10 @@ client.connect(err => {
             res.send(document)
         })
     })
-    app.get('/books/:id', (req, res) => {
-        const id = req.params.id
-        console.log(id);
-        booksCollection.find({_id: req.params.id})
+    app.get('/orders', (req, res) => {
+        ordersCollection.find({})
         .toArray((err, document) => {
             res.send(document)
-        })
-    })
-    app.post('/addOrders', (req, res) => {
-        const orders = req.body;
-        ordersCollection.insertOne(orders)
-        .then(result => {
-            console.log(result.insertedCount);
-            res.send(result.insertedCount > 0)
         })
     })
 
