@@ -16,6 +16,7 @@ const port = process.env.PORT || 5000;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 client.connect(err => {
   const booksCollection = client.db("devBookStore").collection("books");
+  const ordersCollection = client.db("devBookStore").collection("orders");
   
     app.post('/addBook', (req, res) => {
         const newBook = req.body;
@@ -33,6 +34,21 @@ client.connect(err => {
             res.send(document)
         })
     })
+    app.get('/books/:id', (req, res) => {
+        const id = req.params.id
+        console.log(id);
+        booksCollection.find({_id: req.params.id})
+        .toArray((err, document) => {
+            res.send(document)
+        })
+    })
+
+    app.post('/addOrder', (req, res) => {
+        const order = req.body;
+        ordersCollection.insertOne(order)
+        .then(result => {
+            res.send(result.insertedCount > 0)
+        })
 });
 
 
