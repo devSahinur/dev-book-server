@@ -42,13 +42,15 @@ client.connect(err => {
             res.send(document)
         })
     })
-
-    app.post('/addOrder', (req, res) => {
-        const order = req.body;
-        ordersCollection.insertOne(order)
+    app.post('/addOrders', (req, res) => {
+        const orders = req.body;
+        ordersCollection.insertOne(orders)
         .then(result => {
+            console.log(result.insertedCount);
             res.send(result.insertedCount > 0)
         })
+    })
+
 });
 
 
