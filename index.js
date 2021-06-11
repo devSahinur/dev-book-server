@@ -1,70 +1,75 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
+const express = require('express')
 const MongoClient = require('mongodb').MongoClient;
 const ObjectId = require('mongodb').ObjectId;
+const cors = require('cors');
 require('dotenv').config();
 
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.1zupo.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`;
-
-const app = express()
-app.use(bodyParser.json());
+const app = express();
+app.use(express.json());
 app.use(cors());
 
-const port = process.env.PORT || 5500;
+const port = process.env.PORT || 5000
 
+app.get('/', (req, res) => {
+    res.send('Welcome to devBook Shop Server')
+})
+
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@database.1n8y8.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`;
 
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 client.connect(err => {
-  const booksCollection = client.db("devBookStore").collection("books");
-  const ordersCollection = client.db("devBookStore").collection("orders");
-  
-    app.post('/addBook', (req, res) => {
-        const newBook = req.body;
-        console.log(newBook);
-        booksCollection.insertOne(newBook)
-        .then(result => {
-            console.log(result.insertedCount);
-            res.send(result.insertedCount > 0)
-        })
-    })
-    app.post('/addOrder', (req, res) => {
-        const newBook = req.body;
-        console.log(newBook);
-        ordersCollection.insertOne(newBook)
-        .then(result => {
-            console.log(result.insertedCount);
-            res.send(result.insertedCount > 0)
-        })
+    const productCollection = client.db(`${process.env.DB_NAME}`).collection("products");
+    const orderCollection = client.db(`${process.env.DB_NAME}`).collection("Orders");
+
+    app.get('/products', (req, res) => {
+        productCollection.find({})
+            .toArray((err, docs) => res.send(docs))
     })
 
-    app.get('/books', (req, res) => {
-        booksCollection.find({})
-        .toArray((err, document) => {
-            res.send(document)
-        })
+    app.get('/search', (req, res) => {
+        if (!req.query.keyword) {
+            return productCollection.find({})
+                .toArray((err, docs) => res.send(docs))
+        }
+        productCollection.find({ $text: { $search: req.query.keyword } })
+            .toArray((err, docs) => res.send(docs))
     })
+
     app.get('/orders', (req, res) => {
-        ordersCollection.find({})
-        .toArray((err, document) => {
-            res.send(document)
-        })
+        const queryEmail = req.query.email;
+        orderCollection.find({ email: queryEmail })
+            .toArray((err, docs) => res.send(docs))
+    })
+
+    app.post('/addProduct', (req, res) => {
+        productCollection.insertOne(req.body)
+            .then(result => res.send(!!result.insertedCount))
+    })
+
+    app.post('/addOrder', (req, res) => {
+        const order = req.body;
+        orderCollection.insertOne(order)
+            .then(result => res.send(!!result.insertedCount))
     })
 
     app.delete('/delete/:id', (req, res) => {
-        ordersCollection.deleteOne({_id: ObjectId(req.params.id)})
-        .then( result => {
-            console.log(result);
-        })
-    })
-    app.delete('/post/:id', (req, res) => {
-        booksCollection.deleteOne({_id: ObjectId(req.params.id)})
-        .then( result => {
-            console.log(result);
-        })
+        productCollection.deleteOne({ _id: ObjectId(req.params.id) })
+            .then(result => {
+                res.send(!!result.deletedCount)
+            })
     })
 
+    app.patch('/update/:id', (req, res) => {
+        productCollection.updateOne(
+            { _id: ObjectId(req.params.id) },
+            {
+                $set: req.body
+            }
+        ).then(result => {
+            res.send(result.modifiedCount > 0)
+        })
+    })
 });
 
 
-app.listen(port)
+app.listen(port);
