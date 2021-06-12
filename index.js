@@ -13,55 +13,47 @@ app.use(cors());
 
 const port = process.env.PORT || 5500;
 
+app.get('/', (req, res) => {
+    res.send('Welcome to DEV Book Shop Server')
+})
+
 
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 client.connect(err => {
-  const booksCollection = client.db("devBookStore").collection("books");
-  const ordersCollection = client.db("devBookStore").collection("orders");
+  const productCollection = client.db(`${process.env.DB_NAME}`).collection("products");
+  const orderCollection = client.db(`${process.env.DB_NAME}`).collection("Orders");
   
-    app.post('/addBook', (req, res) => {
-        const newBook = req.body;
-        console.log(newBook);
-        booksCollection.insertOne(newBook)
-        .then(result => {
-            console.log(result.insertedCount);
-            res.send(result.insertedCount > 0)
-        })
-    })
-    app.post('/addOrder', (req, res) => {
-        const newBook = req.body;
-        console.log(newBook);
-        ordersCollection.insertOne(newBook)
-        .then(result => {
-            console.log(result.insertedCount);
-            res.send(result.insertedCount > 0)
-        })
+    console.log('db connect')
+
+    app.get('/products', (req, res) => {
+        productCollection.find({})
+            .toArray((err, document) => res.send(document))
     })
 
-    app.get('/books', (req, res) => {
-        booksCollection.find({})
-        .toArray((err, document) => {
-            res.send(document)
-        })
+    app.get('/search', (req, res) => {
+        if (!req.query.keyword) {
+            return productCollection.find({})
+                .toArray((err, docs) => res.send(docs))
+        }
+        productCollection.find({ $text: { $search: req.query.keyword } })
+            .toArray((err, docs) => res.send(docs))
     })
+
     app.get('/orders', (req, res) => {
-        ordersCollection.find({})
-        .toArray((err, document) => {
-            res.send(document)
-        })
+        const queryEmail = req.query.email;
+        orderCollection.find({ email: queryEmail })
+            .toArray((err, docs) => res.send(docs))
     })
 
-    app.delete('/delete/:id', (req, res) => {
-        ordersCollection.deleteOne({_id: ObjectId(req.params.id)})
-        .then( result => {
-            console.log(result);
-        })
+    app.post('/addProduct', (req, res) => {
+        productCollection.insertOne(req.body)
+            .then(result => res.send(!!result.insertedCount))
     })
-    app.delete('/post/:id', (req, res) => {
-        booksCollection.deleteOne({_id: ObjectId(req.params.id)})
-        .then( result => {
-            console.log(result);
-        })
+
+    app.post('/addOrder', (req, res) => {
+        const order = req.body;
+        orderCollection.insertOne(order)
+            .then(result => res.send(!!result.insertedCount))
     })
 
 });
