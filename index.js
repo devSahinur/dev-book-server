@@ -29,7 +29,8 @@ client.connect(err => {
         productCollection.find({})
             .toArray((err, document) => res.send(document))
     })
-
+    
+    productCollection.createIndex({ productName: "text" });
     app.get('/search', (req, res) => {
         if (!req.query.keyword) {
             return productCollection.find({})
@@ -54,6 +55,24 @@ client.connect(err => {
         const order = req.body;
         orderCollection.insertOne(order)
             .then(result => res.send(!!result.insertedCount))
+    })
+
+    app.delete('/delete/:id', (req, res) => {
+        productCollection.deleteOne({ _id: ObjectId(req.params.id) })
+            .then(result => {
+                res.send(!!result.deletedCount)
+            })
+    })
+
+    app.patch('/update/:id', (req, res) => {
+        productCollection.updateOne(
+            { _id: ObjectId(req.params.id) },
+            {
+                $set: req.body
+            }
+        ).then(result => {
+            res.send(result.modifiedCount > 0)
+        })
     })
 
 });
